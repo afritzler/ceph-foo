@@ -19,8 +19,11 @@ jobs:
           kubectl apply -f https://raw.githubusercontent.com/rook/rook/v1.10.11/deploy/examples/crds.yaml
           kubectl apply -f https://raw.githubusercontent.com/rook/rook/v1.10.11/deploy/examples/common.yaml
           kubectl apply -f https://raw.githubusercontent.com/rook/rook/v1.10.11/deploy/examples/operator.yaml
-          kubectl apply -f https://raw.githubusercontent.com/onmetal/cephlet/main/docs/development/rook/pool.yaml
+          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-operator
           kubectl apply -f https://raw.githubusercontent.com/onmetal/cephlet/main/docs/development/rook/cluster.yaml
+          kubectl apply -f https://raw.githubusercontent.com/onmetal/cephlet/main/docs/development/rook/pool.yaml
       - name: Test service URLs
         run: |
+          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-mgr
+          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-osd
           kubectl get pod -A
