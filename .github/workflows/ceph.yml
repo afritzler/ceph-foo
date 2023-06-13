@@ -1,6 +1,7 @@
 name: CI
 on:
-  - pull_request
+  workflow_dispatch:
+
 jobs:
   job1:
     runs-on: ubuntu-latest
@@ -9,21 +10,17 @@ jobs:
       - uses: actions/checkout@v2
       - name: Start minikube
         uses: medyagh/setup-minikube@master
+        with:
+          start-args: '--disk-size=10g --extra-disks=1'
       - name: Try the cluster !
         run: kubectl get pods -A
-      - name: Build image
-        run: |
-          export SHELL=/bin/bash
-          eval $(minikube -p minikube docker-env)
-          docker build -f ./Dockerfile -t local/example .
-          echo -n "verifying images:"
-          docker images
       - name: Deploy to minikube
-        run:
-          kubectl apply -f deploy-to-minikube.yaml
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/rook/rook/v1.10.11/deploy/examples/crds.yaml
+          kubectl apply -f https://raw.githubusercontent.com/rook/rook/v1.10.11/deploy/examples/common.yaml
+          kubectl apply -f https://raw.githubusercontent.com/rook/rook/v1.10.11/deploy/examples/operator.yaml
+          kubectl apply -f https://raw.githubusercontent.com/onmetal/cephlet/main/docs/development/rook/pool.yaml
+          kubectl apply -f https://raw.githubusercontent.com/onmetal/cephlet/main/docs/development/rook/cluster.yaml
       - name: Test service URLs
         run: |
-          minikube service list
-          minikube service example --url
-          echo "------------------opening the service------------------"
-          curl $(minikube service example --url)
+          kubectl get pod -A
