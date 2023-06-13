@@ -8,10 +8,26 @@ jobs:
     name: build example and deploy to minikube
     steps:
       - uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: libvirt
+        run: |
+          cat /sys/module/kvm_amd/parameters/nested
+          egrep -c ' lm ' /proc/cpuinfo
+          sudo apt-get update
+          sudo apt-get install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+          sudo adduser `id -un` libvirt
+          sudo usermod -aG kvm `id -un`
+          sudo usermod -aG libvirt `id -un`    
+          sudo chmod 666 /run/libvirt/libvirt-sock
+          echo "options kvm_intel nested=1" >  kvm_intel.conf
+          sudo cp kvm_intel.conf /etc/modprobe.d/kvm_intel.conf
+          sudo lsmod
+          virt-host-validate
       - name: Start minikube
         uses: medyagh/setup-minikube@master
         with:
-          start-args: '--disk-size=10g --extra-disks=1'
+          start-args: '--disk-size=10g --extra-disks=1 --driver kvm2'
       - name: Try the cluster !
         run: kubectl get pods -A
       - name: Deploy to minikube
@@ -29,21 +45,22 @@ jobs:
           sleep 30
           kubectl get pod -A
           kubectl logs -n rook-ceph -l app=rook-ceph-operator
-          logs -n rook-ceph -l app=rook-ceph-mon
           sleep 30
-          kubectl logs -n rook-ceph -l app=rook-ceph-operator
           kubectl get pod -A
-          kubectl logs -n rook-ceph -l app=rook-ceph-mon
+          kubectl logs -n rook-ceph -l app=rook-ceph-operator
           sleep 30
-          kubectl logs -n rook-ceph -l app=rook-ceph-operator
           kubectl get pod -A
-          kubectl logs -n rook-ceph -l app=rook-ceph-mon
+          kubectl logs -n rook-ceph -l app=rook-ceph-operator
           sleep 30
+          kubectl get pod -A 
           kubectl logs -n rook-ceph -l app=rook-ceph-operator
+          kubectl describe cephblockpool -n rook-ceph cephlet-pool
+          kubectl wait --for=condition=ready --timeout=30s pod -n rook-ceph -l app=rook-ceph-mon
+          kubectl wait --for=condition=ready --timeout=30s cephcluster -n rook-ceph my-cluster
           kubectl get pod -A
-          kubectl logs -n rook-ceph -l app=rook-ceph-mon
-          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-mon
-          kubectl wait --for=condition=ready CephCluster -n rook-ceph my-cluster
-          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-mgr
-          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-osd
+          sleep 30   
+          kubectl describe cephblockpool -n rook-ceph cephlet-pool
+          sleep 30   
+          kubectl describe cephblockpool -n rook-ceph cephlet-pool
+          kubectl wait --for=condition=ready --timeout=30s cephblockpool -n rook-ceph cephlet-pool
           kubectl get pod -A
