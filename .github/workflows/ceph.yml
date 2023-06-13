@@ -26,6 +26,23 @@ jobs:
         run: |
           kubectl get pod -A
           kubectl logs -n rook-ceph -l app=rook-ceph-operator
+          sleep 30
+          kubectl get pod -A
+          kubectl logs -n rook-ceph -l app=rook-ceph-operator
+          logs -n rook-ceph -l app=rook-ceph-mon
+          sleep 30
+          kubectl logs -n rook-ceph -l app=rook-ceph-operator
+          kubectl get pod -A
+          kubectl logs -n rook-ceph -l app=rook-ceph-mon
+          sleep 30
+          kubectl logs -n rook-ceph -l app=rook-ceph-operator
+          kubectl get pod -A
+          kubectl logs -n rook-ceph -l app=rook-ceph-mon
+          sleep 30
+          kubectl logs -n rook-ceph -l app=rook-ceph-operator
+          kubectl get pod -A
+          kubectl logs -n rook-ceph -l app=rook-ceph-mon
+          kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-mon
           kubectl wait --for=condition=ready CephCluster -n rook-ceph my-cluster
           kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-mgr
           kubectl wait --for=condition=ready pod -n rook-ceph -l app=rook-ceph-osd
